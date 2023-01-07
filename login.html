@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/login.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <title>ログイン/みんなでチャット</title>
+</head>
+<body>
+    <header></header>
+    <main>
+        <div id="wrapper">
+            <div id="content">
+                <h1 id="message"></h1>
+                <button id="login">Googleでログイン</button>
+                <a href="https://accounts.google.com/signup/v2/webcreateaccount?continue=https%3A%2F%2Fmyaccount.google.com%3Futm_source%3Daccount-marketing-page%26utm_medium%3Dcreate-account-button&flowName=GlifWebSignIn&flowEntry=SignUp">Googleアカウントを持っていないひとはこちら</a>
+            </div>
+        </div>
+    </main>
+    <footer></footer>
+
+
+
+<!-- jquery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+
+<!-- 以下firebase -->
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // AuthenticationのSDK
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
+        from "https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-auth.js"
+
+    // FireStoreのSDK
+    import  { getFirestore, collection, doc, Timestamp, addDoc, deleteDoc, onSnapshot, query, orderBy }
+        from "https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-firestore.js"
+      
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "jschamp-7a096.firebaseapp.com",
+      projectId: "jschamp-7a096",
+      storageBucket: "jschamp-7a096.appspot.com",
+      messagingSenderId: "50280930533",
+      appId: "1:50280930533:web:414be0edff04c25aa9c80c"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // FireStore設定
+    const db = getFirestore(app); //Firebaseの中のFirestoreを使うことを宣言
+    const ref = collection(db, "chat"); //Firestoreの中の、どのcollectionを選択するか宣言
+
+    // Authentication（Google認証）のセットアップ
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+    const auth = getAuth();
+    // ＝＝＝＝＝＝Authentication（Google認証）のセットアップ
+
+
+    // Login処理
+    $("#login").on('click', function(){
+        // Google認証完了後の処理
+        signInWithPopup(auth, provider).then((result) => {
+            // ログイン後のページ遷移（href以降に遷移先を記入）
+            location.href="firestoreTest.html";
+        }).catch((error) => {
+            // Handle errors here.
+            const errorCode = error.code;
+            const errorMessage = error.message;
+            alert(errorMessage);
+            // The email of the user's account used.
+            const email = error.email;
+            // The AuthCredential type that was used.
+            const credential = GoogleAuthProvider.credentialFormError(error);
+            // ...
+        });
+
+    });
+
+    const arr =[
+        "　おつかれさまです！",
+        "　ともだちのトコロへ。",
+        "いつメンがすぐそこに",
+        "　チャット作るの大変って知ってた？",
+        "不具合あったらゴメンね",
+        "Never give up!"
+    ];
+    const emoi =arr[Math.floor(Math.random()*arr.length)];
+    $("#message").html(emoi)
+
+
+</script>
+
+
+</body>
+</html>

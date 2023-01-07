@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./css/reset.css">
+    <link rel="stylesheet" href="./css/firestoreTest.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <title>みんなでチャット</title>
+</head>
+<body>
+<!-- コンテンツ表示画面 -->
+<div id="wrapper">
+    <div id="roomsDisplay">
+        <header>
+            <div id="header-wrapper">
+                <div style="display:flex;">
+                    <p id="loginUserName"><span style="font-size: 13px;">さん</span></p>
+                    
+                    <button id="logout">ログアウト</button>
+                </div>
+                <div style="display:flex;align-items:center">
+                    <input id="rname" type="text" placeholder="ルーム名" required="required">
+                    <button id="addRoom">作成</button>
+                </div>
+            </div>
+        </header>
+        <ul id="roomsList"></ul>
+    </div>
+    <div id="talkDisplay">
+        <header>
+            <!-- h1にルーム名を表示し、h2にルームIDを非表示でHTML化 -->
+            <h1 id="nameDisplay"></h1>
+            <h2 id="roomIdNone"></h2>
+            <div id="userOperation">
+                <details id="writersListDetails" class="writersListDetailsNone">
+                    <summary>ルームメイト</summary>
+                    <ul id="writersList"></ul>
+                </details>
+                <details id="addUsersList" class="addUsersListNone">
+                    <summary>追加</summary>
+                    <ul id="usersList"></ul>
+                </details>
+            </div>
+            
+            <!-- <select name="room" id="roomList">
+                <option value="default">ルーム選択</option>
+            </select> -->
+        </header>
+        <main> 
+            <ul id="output"></ul>
+            <div id="sendArea">
+                <div id="sendContents">
+                    <textarea name="" id="text" rows="1" placeholder="メッセージ" required></textarea>
+                    <button id="send">送信</button>
+                </div>
+                
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- /コンテンツ表示画面 -->
+
+
+<!-- jquery -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<!-- <script src="./firestoreTest.js" charset="utf-8"></script> -->
+
+<!-- 以下firebase -->
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    // TODO: Add SDKs for Firebase products that you want to use
+    // https://firebase.google.com/docs/web/setup#available-libraries
+
+    // AuthenticationのSDK
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut }
+        from "https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-auth.js"
+    // FireStoreのSDK
+    import  { getFirestore, collection, doc, Timestamp, getDoc, addDoc, setDoc, deleteDoc, onSnapshot, query, orderBy }
+        from "https://cdnjs.cloudflare.com/ajax/libs/firebase/9.15.0/firebase-firestore.js"
+        
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "",
+      authDomain: "jschamp-7a096.firebaseapp.com",
+      projectId: "jschamp-7a096",
+      storageBucket: "jschamp-7a096.appspot.com",
+      messagingSenderId: "50280930533",
+      appId: "1:50280930533:web:414be0edff04c25aa9c80c"
+    };
+  
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // Authentication（Google認証）のセットアップ
+    const provider = new GoogleAuthProvider();
+    provider.addScope('https://www.googleapis.com/auth/contacts.readonly');
+    const auth = getAuth();
+    // ＝＝＝＝＝＝Authentication（Google認証）のセットアップ
+
+    // FireStore設定
+    const db = getFirestore(app); //Firebaseの中のFirestoreを使うことを宣言
+    const ref = collection(db, "chat"); //Firestoreの中の、どのcollectionを選択するか宣言
+
+
+    
+
+    // 認証によりユーザー情報を取得
+    onAuthStateChanged(auth, (user) => {
+        const uid = user.uid;
+        // const idRef = addDoc(collection(db,"userId"),uid);
+
+        let userInfo;
+        // ユーザー（誰？）の取得
+        if (user) {
+            // User is signed in, see docs for a list of available properties
+            // https://firebase.google.com/docs/reference/js/firebase.User
+            
+            // 以下、ユーザー情報の取得
+            if (user !== null) {
+                user.providerData.forEach((profile) => {
+                    // ログイン情報の取得
+                    userInfo = {
+                        id: uid,
+                        name: profile.displayName,
+                        SignInProvider: profile.providerId,
+                        email: profile.email,
+                        PhotoURL: profile.photoURL
+                    };
+                    // コレクションuserIdにユーザー情報を追加
+                    const idRef = setDoc(doc(db, "userId", uid), userInfo);
+                    $("#loginUserName").prepend(profile.displayName);
+                    // console.log(profile.displayName);
+                    // console.log("Sign-in provider: " + profile.providerId);
+                    // console.log("  Provider-specific UID: " + profile.uid);
+                    // console.log("  Email: " + profile.email);
+                    // console.log("  Photo URL: " + profile.photoURL);
+                });
+            };
+        } else {
+            // User is signed out
+            _redirect();
+        };
+
+        // ボタンを押したら、任意の名前・一意のIDでルーム作成
+        $("#addRoom").on('click', function(){
+            // ルーム作成
+            const roomDocument = {
+            rname: $("#rname").val(), // ルーム名
+            producer: uid // 作成者のid
+            };
+            addDoc(collection(db, "rooms"), roomDocument);
+        });
+
+        
+
+    });
+
+    // ログアウト
+    $("#logout").on('click', function(){
+        signOut(auth).then(() => {
+            // Sign-out successful.
+            _redirect();
+        }).catch((error) => {
+            // An error happened.
+            console.error(error);
+        });
+    });
+
+    // ログイン画面に戻る関数（リダイレクト設定）
+    function _redirect(){
+        location.href="login.html";
+    };
+
+
+    // ＝＝＝＝＝＝＝＝＝DB操作＝＝＝＝＝＝＝＝＝＝
+
+    // リストに作成済みroomをすべて表示
+    const roomsRef = collection(db, "rooms");
+    onSnapshot(roomsRef, (snapshot)=>{
+        snapshot.docChanges().forEach((change) =>{
+            const rname = change.doc.data().rname;
+            const optionRoom = 
+                `<li id="${change.doc.id}" class=roomLi>
+                    ${rname}
+                </li>`;
+            $("#roomsList").append(optionRoom);
+        });
+    });
+
+    // ユーザーを認証したら、、
+    onAuthStateChanged(auth, (user) => {
+            const uid = user.uid;
+
+        $(document).off('click', '.roomLi');
+        // ルームの列をクリックしたら発生する動作
+        $(document).on('click', '.roomLi', function(){
+            // 最初にトーク画面をクリア
+            $("#output").empty();
+            $("#writersList").empty();
+            $("#usersList").empty();
+            
+
+            // トークルーム画面にルームメイトを表示
+            $(".writersListDetailsNone").removeClass();
+            // $("＃writersListDetails").addClass("writersListDetails");
+
+            // トークルーム画面にユーザー追加を表示
+            $(".addUsersListNone").removeClass();
+            $("#addUsersList").addClass("addUsersList");
+
+            // トーク画面のヘッダーにルーム名を表示、displayNoneのルームIDを表示
+            $("#nameDisplay").html($(this).text());
+            $("#roomIdNone").html($(this).attr("id"));
+            $("#output").addClass($(this).attr("id"));
+
+        
+            // 送信処理
+            // jQueryの$(Document).onだとメインがクリックされた回数分、その中のクリックイベントも重複処理されてしまうため、一度offする
+            $('#send').off('click');
+            $("#send").on("click", ()=>{
+                const ob = {
+                    userId: uid,
+                    uname: user.displayName,
+                    text: $("#text").val(),
+                    date: Timestamp.now()
+                };
+                try {
+                    const docRef = addDoc(collection(db, `rooms/${$("#roomIdNone").text()}/messages`), ob);
+                    // const docRef = addDoc(roomRef, ob);
+                    console.log("Document written with ID: ", ob.text);
+                    } catch (e) {
+                    console.error("Error adding document: ", e);
+                };
+
+                // ルールチェック用・送信したらルームの作成者を表示
+                const producerCheck = async () => {
+                    // ユーザー追加プルダウンで選択したユーザーIDの情報を取得
+                    const docRef = doc(db, `rooms/${$("#roomIdNone").text()}`);
+                    const docSnap = await getDoc(docRef);
+                    const data = docSnap.data();
+                    console.log(data.producer);
+                    
+                };
+                producerCheck();
+            });
+
+            // 最初にデータ取得＆onSnapshotでリアルタイムにデータを取得
+            // const q = query(ref, orderBy("date")); //データを取得しdateを基準に降順descで並べるorderBy関数
+            const q = query(collection(db,`rooms/${$("#roomIdNone").text()}/messages`), orderBy("date"));
+            // const q = query(roomRef, orderBy("date"));
+            // onSnapshotで送信されたデータを監視、docChangesで最初以降は差分のみ取得
+            onSnapshot(q,function(snapshot){
+                snapshot.docChanges().forEach((change) => {
+                    if (change.type === "added"){
+                        // データの中身をdataとして取得
+                        const data = change.doc.data();
+                        // 入力日時をTimestampからdate型に変更
+                        const dDate = data.date.toDate();
+
+                        const msgElement ="";
+                        if(data.uname == user.displayName){
+                            const text = 
+                            `<li class=liRight id=${change.doc.id}>
+                                <div class="msgText myMsgColor">
+                                    ${data.text}
+                                </div>
+                                <div class=msgInfo>${dDate.getMonth()+1}/${dDate.getDate()} ${dDate.getHours()}:${("0"+dDate.getMinutes()).slice(-2)}
+                                    <button class="remove">×</button>
+                                </div>
+                            </li>`;
+                            // $("#output").append(text);
+                            $(`.${$("#roomIdNone").text()}`).append(text);
+                        }else{
+                            const text = 
+                            `<li class=liLeft id=${change.doc.id}>
+                                <div class=msgUname>${data.uname}</div>
+                                <div class="msgText anotherMsgColor">
+                                    ${data.text}
+                                </div>
+                                <div class=msgInfo>${dDate.getMonth()+1}/${dDate.getDate()} ${dDate.getHours()}:${("0"+dDate.getMinutes()).slice(-2)}</div>
+                            </li>`;
+                            // $("#output").append(text);
+                            $(`.${$("#roomIdNone").text()}`).append(text);
+                        };
+
+                        // 自動スクロール
+                        $("#output")[0].scrollTop = $("#output")[0].scrollHeight;
+                    };
+                });
+            });
+
+            // 選択したユーザーの情報をroomsの選択中roomのwriterIdに格納
+            $(document).on('click', ".addUser", function(){
+                const writerId = $(this).attr("id");
+                let userInfo;
+                const getSetUserInfo = async () => {
+                    // ユーザー追加プルダウンで選択したユーザーIDの情報を取得
+                    const docRef = doc(db, "userId", writerId);
+                    const docSnap = await getDoc(docRef);
+                    const data = docSnap.data();
+                    userInfo = {
+                        id: data.id,
+                        name: data.name,
+                        SignInProvider: data.SignInProvider,
+                        email: data.email,
+                        PhotoURL: data.PhotoURL
+                    };
+                    // 取得したユーザー情報を選択roomのwriterIdに入れる
+                    await setDoc(doc(db, `rooms/${$("#roomIdNone").text()}/writers`, writerId), userInfo);
+
+                    alert(`ルーム〈${$("#nameDisplay").text()}〉にユーザー「${data.name}」を追加しました`);
+                   
+                };
+                getSetUserInfo();
+            });
+
+            // ルームに登録されているユーザーを一覧表示
+            const writerRef = collection(db, `rooms/${$("#roomIdNone").text()}/writers`);
+            const roomMates = []; //追加ユーザーのところで使う用
+            onSnapshot(writerRef, (snapshot)=>{
+                snapshot.docChanges().forEach((change) =>{
+                    if (change.type === "added"){
+                        if(change.doc.data().id !== uid){
+                            const users = change.doc.data();
+
+                            // ルームメイト一覧を作成・表示
+                            const user = 
+                                `<li id=${users.id} class=addUser>
+                                    ${users.name}
+                                </li>`;
+                            $("#writersList").append(user);
+
+                            // 既に追加済みのユーザーのid配列を作成
+                            roomMates.push(users.id);
+                        };
+                    };
+                });
+            });
+
+            // 自分でも追加済みでもないユーザーを、追加用リストに表示
+            const userIdRef = collection(db, "userId");
+            onSnapshot(userIdRef, (snapshot)=>{
+                snapshot.docChanges().forEach((change) =>{
+                    if (change.type === "added"){
+                        // includes()は配列の中に()内の要素が含まれていたらtrue、含まれなければfalseを返す
+                        if(change.doc.data().id !== uid && roomMates.includes(change.doc.data().id) == false){
+                            const users = change.doc.data();
+                            const user = 
+                                `<li id=${users.id} class=addUser>
+                                    ${users.name}
+                                </li>`;
+                            $("#usersList").append(user);
+                        };
+                    };
+                });
+            });
+
+
+            // ルーム追加用のユーザー一覧の作成
+            // onSnapshot(userIdRef, (snapshot)=>{
+            //     snapshot.docChanges().forEach((change) =>{
+            //         const roomMates =[];
+            //         onSnapshot(writerRef, (snapshot)=>{
+            //             snapshot.docChanges().forEach((change) =>{
+            //                 if(change.doc.data().id !== uid){
+            //                     const users = change.doc.data();
+            //                     roomMates += users.id;
+            //                 };
+            //             });
+            //         });
+
+            //         if(change.doc.data().id !== uid && roomMates.indexOf(change.doc.data().id) == -1){
+            //             const users = change.doc.data();
+            //             const user = 
+            //                 `<li id=${users.id} class=addUser>
+            //                     ${users.name}
+            //                 </li>`;
+            //             $("#usersList").append(user);
+            //         };
+            //     });
+            // });
+
+            // onSnapshot(writerRef, (snapshot)=>{
+            //     snapshot.docChanges().forEach((change) =>{
+            //         if(change.doc.data().id !== uid){
+            //             const users = change.doc.data();
+
+            //             // 既に追加済みのユーザーのid配列を作成
+            //             const roomMates =[];
+            //             roomMates += users.id;
+            //             // 自分でも追加済みでもないユーザーを、追加用リストに表示
+            //             const userIdRef = collection(db, "userId");
+            //             onSnapshot(userIdRef, (snapshot)=>{
+            //                 snapshot.docChanges().forEach((change) =>{
+            //                     if(change.doc.data().id !== uid && roomMates.indexOf(change.doc.data().id) == -1){
+            //                         const users = change.doc.data();
+            //                         const user = 
+            //                             `<li id=${users.id} class=addUser>
+            //                                 ${users.name}
+            //                             </li>`;
+            //                         $("#usersList").append(user);
+            //                     };
+            //                 });
+            //             });
+
+            //         };
+            //     });
+            // });
+
+            
+
+
+            // ルーム追加用のユーザー一覧の作成
+            // const userIdRef = collection(db, "userId");
+            // onSnapshot(userIdRef, (snapshot)=>{
+            // snapshot.docChanges().forEach((change) =>{
+            //     if(change.doc.data().id !== uid){
+            //         const users = change.doc.data();
+            //         const user = 
+            //             `<li id=${users.id} class=addUser>
+            //                 ${users.name}
+            //             </li>`;
+            //         $("#usersList").append(user);
+            //     };
+            // });
+        
+
+            // });
+    });
+});
+
+
+    // メッセージの削除ボタン
+    // documentを使うことで、あとから追加した要素を発火させてもイベントが発生
+    $(document).on('click', '.remove', function(){
+        const id = $(this).parent().parent().attr("id");
+        // console.log($(this).parent().parent());
+        const remove = deleteDoc(doc(db, `rooms/${$("#roomIdNone").text()}/messages/${id}`));
+        $(this).parent().parent().remove();
+    });
+    
+
+
+    // // 選択したルームのデータを参照する関数
+    // function roomRef (path){
+    //     const place = collection(db, `rooms/${path}/messages`);
+    //     console.log(place);
+    //     return place;
+    // };
+    
+    // onAuthStateChanged(auth, (user) => {
+    //     const uid = user.uid;
+    //     // const idRef = addDoc(collection(db,"userId"),uid);
+
+    //     let userInfo;
+    //     // ユーザー（誰？）の取得
+    //     if (user) {
+    //         // User is signed in, see docs for a list of available properties
+    //         // https://firebase.google.com/docs/reference/js/firebase.User
+            
+    //         // 以下、ユーザー情報の取得
+    //         if (user !== null) {
+    //             user.providerData.forEach((profile) => {
+    //                 // ログイン情報の取得
+    //                 userInfo = {
+    //                     id: uid,
+    //                     name: profile.displayName,
+    //                     SignInProvider: profile.providerId,
+    //                     email: profile.email,
+    //                     PhotoURL: profile.photoURL
+    //                 };
+    //                 // コレクションuserIdにユーザー情報を追加
+    //                 const idRef = setDoc(doc(db, "userId", uid), userInfo);
+
+    //                 // console.log(profile.displayName);
+    //                 // console.log("Sign-in provider: " + profile.providerId);
+    //                 // console.log("  Provider-specific UID: " + profile.uid);
+    //                 // console.log("  Email: " + profile.email);
+    //                 // console.log("  Photo URL: " + profile.photoURL);
+    //             });
+    //         };
+    //     } else {
+    //         // User is signed out
+    //         _redirect();
+    //     };
+
+    //     // 送信処理
+    //     $("#send").on("click", ()=>{
+    //         const ob = {
+    //             userId: uid,
+    //             uname: user.displayName,
+    //             text: $("#text").val(),
+    //             date: Timestamp.now()
+    //         };
+    //         // console.log(ob);
+    //         // セレクトボックスで選択したルームにデータ送信
+    //         const docRef = addDoc(roomRef(selectRoom), ob); // addDoc(コレクションの指定, オブジェクト変数)で自動id付与
+    //     });
+
+    //     // 最初にデータ取得＆onSnapshotでリアルタイムにデータを取得
+    //     // const q = query(ref, orderBy("date")); //データを取得しdateを基準に降順descで並べるorderBy関数
+    //     const q = query(roomRef(selectRoom), orderBy("date"));
+    //     // onSnapshotで送信されたデータを監視、docChangesで最初以降は差分のみ取得
+    //     onSnapshot(q,function(snapshot){
+    //         snapshot.docChanges().forEach((change) => {
+    //             // データの中身をdataとして取得
+    //             const data = change.doc.data();
+    //             // 入力日時をTimestampからdate型に変更
+    //             const dDate = data.date.toDate();
+    //             const text = 
+    //                 `<li class=liLeft id=${change.doc.id}>
+    //                     <div class=msgUname>${data.uname}</div>
+    //                     <div class=msgText>
+    //                         ${data.text}
+    //                     </div>
+    //                     <div class=msgInfo>${dDate.getMonth()+1}/${dDate.getDate()} ${dDate.getHours()}:${("0"+dDate.getMinutes()).slice(-2)}</div>
+    //                 </li>`;
+    //             $("#output").append(text);
+
+    //             // 自動スクロール
+    //             $("#output")[0].scrollTop = $("#output")[0].scrollHeight;
+    //         });
+    //     });
+
+    // });
+
+    
+
+
+
+</script>

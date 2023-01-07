@@ -1,0 +1,243 @@
+@charset "utf-8";
+
+body {
+    font-family: 'Open Sans', 'Kosugi Maru', sans-serif;
+    font-size: 18px;
+    max-height: 100vh;
+}
+
+button {
+    cursor: pointer;
+}
+
+#wrapper {
+    display: flex;
+}
+
+/* ルーム一覧画面=== */
+
+
+#roomsDisplay {
+    width: 40vw;
+}
+
+#roomsDisplay header {
+    background-color: #7FC2C2;
+    height: 100px;
+}
+
+#loginUserName {
+    padding: 10px;
+}
+
+#logout {
+    display: block;
+    /* background-color: #E1774B; */
+    background-color: #7FC2C2;
+    color: #fff;
+    border-radius: 10px;
+    border: none;
+    font-size: 15px;
+    font-family: 'Open Sans', 'Kosugi Maru', sans-serif;
+    /* padding: 3px 10px; */
+    margin-right: 5px;
+    margin-left: auto;
+}
+
+#rname {
+    display: inline-block;
+    /* resize: none; */
+    /* width: 40vw; */
+    margin: 10px;
+    border-radius: 10px;
+    border:solid rgb(107, 107, 107) 1.5px;
+    font-size: 13px;
+    font-family: 'Open Sans', 'Kosugi Maru', sans-serif;
+    padding: 5px;
+}
+
+#addRoom {
+    /* display: inline-block; */
+    background-color: #E1774B;
+    color: #fff;
+    border-radius: 10px;
+    border: solid 2px #fff;
+    font-size: 15px;
+    font-family: 'Open Sans', 'Kosugi Maru', sans-serif;
+    padding: 3px 10px;
+    margin-right: 10px;
+    /* margin-left: auto; */
+}
+
+.roomLi {
+    padding: 10px;
+    border-bottom: solid 2px rgb(113, 113, 113);
+    cursor: pointer;
+}
+
+/* ===ルーム一覧画面 */
+
+
+/* トーク画面=== */
+#talkDisplay {
+    width: 60vw;
+    border-left: solid 2px rgb(160, 160, 160);
+}
+
+#talkDisplay header {
+    /* display: flex; */
+    /* justify-content: space-around; */
+    /* align-items: center; */
+    font-size: 30px;
+    height: 100px;
+    background-color: #7FC2C2;
+}
+
+#nameDisplay{
+    padding: 20px;
+}
+
+#roomIdNone {
+    display: none;
+    font-size: 10px;
+}
+
+#userOperation {
+    display: flex;
+    justify-content: end;
+}
+
+.writersListDetailsNone {
+    display: none;
+}
+#writersListDetails {
+    position: relative;
+    font-size: 15px;
+    margin: 5px 10px;
+}
+#writersList {
+    position: absolute;
+    top: 20px;
+    right: 0;
+    font-size: 13px;
+    color: #fff;
+    background-color: rgb(107, 107, 107);
+    border-radius: 15px;
+    width: 100px;
+}
+#writersList li {
+    padding: 10px;
+}
+
+.addUsersListNone {
+    display: none;
+}
+.addUsersList {
+    position: relative;
+    font-size: 15px;
+    margin: 5px 10px;
+}
+
+#usersList {
+    position: absolute;
+    top: 20px;
+    right: 0;
+    font-size: 13px;
+    color: #fff;
+    background-color: rgb(107, 107, 107);
+    border-radius: 15px;
+    width: 100px;
+}
+
+#usersList li {
+    padding: 10px;
+}
+
+/* データ表示箇所=== */
+#output {
+    overflow: auto;
+    height: calc(100vh - 200px);
+}
+
+/* 表示メッセージ=== */
+/* 左側メッセージ */
+.liLeft {
+    margin: 15px;
+}
+/* 右側メッセージ */
+.liRight {
+    margin: 15px;
+    text-align: right;
+}
+
+.msgText {
+    display: inline-block;
+    /* background-color: rgb(0, 208, 66); */
+    max-width: 50vw;
+    padding: 10px 15px;
+    margin: 5px 0;
+    border-radius: 15px;
+}
+.myMsgColor {
+    background-color: #E1774B;
+}
+.anotherMsgColor {
+    background-color: #F4DB60;
+}
+.msgUname{
+    font-size: 16px;
+}
+.msgInfo {
+    font-size: 14px;
+}
+.remove {
+    color: rgb(107, 107, 107);
+    background-color: #fff;
+    border-radius: 10px;
+    border:solid rgb(107, 107, 107) 1.5px;
+}
+
+/* ===表示メッセージ */
+
+
+
+/* ===データ表示箇所 */
+
+
+
+/* 送信部分=== */
+#sendArea {
+    height: 100px;
+    background-color: #7FC2C2;
+}
+
+#sendContents {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+#text{
+    display: inline-block;
+    resize: none;
+    width: 40vw;
+    margin: 10px 0;
+    border-radius: 10px;
+    font-size: 18px;
+    font-family: 'Open Sans', 'Kosugi Maru', sans-serif;
+    padding: 5px;
+}
+
+#send {
+    display: inline-block;
+    background-color: #E1774B;
+    color: #fff;
+    border-radius: 10px;
+    border: solid 2px #fff;
+    font-size: 15px;
+    font-family: 'Open Sans', 'Kosugi Maru', sans-serif;
+    padding: 3px 10px;
+}
+/* ===送信部分 */
+/* ===トーク画面 */
+
